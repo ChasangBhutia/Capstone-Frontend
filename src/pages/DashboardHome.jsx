@@ -61,21 +61,23 @@ const DashboardHome = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
   // 0. Fetch User Context
   useEffect(() => {
     const fetchUser = async () => {
-        try {
-            setUserLoading(true);
-            const response = await axios.get('http://localhost:3000/api/auth/user', { withCredentials: true });
-            if (response.data.success) {
-                setCurrentUser(response.data.user);
-            }
-        } catch (err) {
-            console.error("Failed to fetch user context", err);
-        } finally {
-            setUserLoading(false);
+      try {
+        setUserLoading(true);
+        const response = await axios.get(`${BACKEND_URL}api/auth/user`, { withCredentials: true });
+        if (response.data.success) {
+          setCurrentUser(response.data.user);
         }
+      } catch (err) {
+        console.error("Failed to fetch user context", err);
+      } finally {
+        setUserLoading(false);
+      }
     };
     fetchUser();
   }, []);
@@ -100,7 +102,7 @@ const DashboardHome = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/stats/overview', { withCredentials: true });
+        const response = await axios.get(`${BACKEND_URL}api/stats/overview`, { withCredentials: true });
         if (response.data.success) {
           setStats(response.data.stats);
         }
@@ -116,26 +118,26 @@ const DashboardHome = () => {
   // 2. Fetch Initial Bus Positions & Connect Socket
   useEffect(() => {
     const fetchBuses = async () => {
-        try {
-            const response = await axios.get('http://localhost:3000/api/bus/all');
-            if (response.data.success) {
-                const busMap = {};
-                response.data.data.forEach(b => busMap[b.busId] = b);
-                setBuses(busMap);
-            }
-        } catch (err) {
-            console.error("Failed to fetch buses", err);
+      try {
+        const response = await axios.get(`${BACKEND_URL}api/bus/all`);
+        if (response.data.success) {
+          const busMap = {};
+          response.data.data.forEach(b => busMap[b.busId] = b);
+          setBuses(busMap);
         }
+      } catch (err) {
+        console.error("Failed to fetch buses", err);
+      }
     };
 
     fetchBuses();
 
-    const socket = io('http://localhost:3000', { withCredentials: true });
+    const socket = io(BACKEND_URL, { withCredentials: true });
     socket.on('bus-location-updated', (data) => {
-        setBuses(prev => ({
-            ...prev,
-            [data.busId]: { ...prev[data.busId], ...data }
-        }));
+      setBuses(prev => ({
+        ...prev,
+        [data.busId]: { ...prev[data.busId], ...data }
+      }));
     });
 
     return () => socket.disconnect();
@@ -288,10 +290,10 @@ const DashboardHome = () => {
 
   if (userLoading) {
     return (
-        <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="text-slate-500 font-medium animate-pulse">Syncing your Secure Dashboard...</p>
-        </div>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p className="text-slate-500 font-medium animate-pulse">Syncing your Secure Dashboard...</p>
+      </div>
     );
   }
 
@@ -336,7 +338,7 @@ const DashboardHome = () => {
             <StatCard title="Security Alerts" value={stats.activeAlerts} subtitle="Requires attention" icon={<AlertTriangle size={24} />} color="amber" trend="Low Severity" trendUp={false} />
           </>
         )}
-        
+
         {isStaff && (
           <>
             <StatCard title="Assigned Unit" value={currentUser?.fullname?.split('Bus ')[1] || 'N/A'} subtitle="Vehicle ID" icon={<Bus size={24} />} color="blue" />
@@ -361,7 +363,7 @@ const DashboardHome = () => {
           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white z-10">
             <div>
               <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                <MapPin size={20} className="text-blue-500" /> 
+                <MapPin size={20} className="text-blue-500" />
                 {isAdmin ? 'Live Fleet Tracking' : isStaff ? 'Sector Status Map' : 'Real-time Child Tracking'}
               </h3>
               <p className="text-sm text-slate-500">

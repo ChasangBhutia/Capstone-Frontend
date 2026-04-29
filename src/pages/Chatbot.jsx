@@ -9,6 +9,8 @@ const Chatbot = () => {
     const [creatingSession, setCreatingSession] = useState(false);
     const bottomRef = useRef(null);
 
+    const BACKEND_URI = import.meta.env.VITE_BACKEND_URL;
+
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -17,7 +19,7 @@ const Chatbot = () => {
     const createSession = async () => {
         try {
             setCreatingSession(true);
-            const res = await fetch('http://localhost:3000/api/ai/session', {
+            const res = await fetch(`${BACKEND_URI}api/ai/session`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -43,7 +45,7 @@ const Chatbot = () => {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:3000/api/ai/chat', {
+            const res = await fetch(`${BACKEND_URI}api/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

@@ -5,8 +5,9 @@ import { Bus, Clock, MapPin, Navigation, Signal, AlertCircle, Share2, Search, X,
 import toast from 'react-hot-toast';
 
 // --- Configuration ---
-const SOCKET_URL = 'http://localhost:3000';
-const API_URL = 'http://localhost:3000/api/bus/all';
+const BACKEND_URI = import.meta.env.VITE_BACKEND_URL;
+const SOCKET_URL = BACKEND_URI;
+const API_URL = BACKEND_URI + 'api/bus/all';
 
 const TransportTracking = () => {
     // 1. State Management
@@ -28,7 +29,7 @@ const TransportTracking = () => {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/api/auth/user', { withCredentials: true });
+                const response = await axios.get(`${BACKEND_URI}api/auth/user`, { withCredentials: true });
                 if (response.data.success) {
                     setCurrentUser(response.data.user);
                 }
@@ -46,7 +47,7 @@ const TransportTracking = () => {
 
         // Initialize Map
         mapInstanceRef.current = L.map(mapContainerRef.current).setView([28.6139, 77.2090], 12);
-        
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(mapInstanceRef.current);
@@ -141,7 +142,7 @@ const TransportTracking = () => {
     // 6. Real GPS Broadcast logic for Bus User (Device Geolocation)
     useEffect(() => {
         let watchId;
-        
+
         if (isSharingLocation && currentUser?.branch && navigator.geolocation) {
             toast.success("GPS Broadcast active. Tracking device position.");
 
@@ -149,7 +150,7 @@ const TransportTracking = () => {
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
-                    
+
                     // Update Local State for immediate feedback
                     setBuses(prev => ({
                         ...prev,
@@ -162,11 +163,11 @@ const TransportTracking = () => {
                     }));
 
                     // Send Real GPS to backend
-                    axios.post('http://localhost:3000/api/bus/update-location', {
+                    axios.post(`${BACKEND_URI}api/bus/update-location`, {
                         x: latitude, // maps to lat
                         y: longitude // maps to lng
                     }, { withCredentials: true })
-                    .catch(err => console.error("Broadcast failed", err));
+                        .catch(err => console.error("Broadcast failed", err));
                 },
                 (error) => {
                     console.error("GPS Error:", error);
@@ -186,7 +187,7 @@ const TransportTracking = () => {
         };
     }, [isSharingLocation, currentUser]);
 
-    const filteredBuses = Object.entries(buses).filter(([id]) => 
+    const filteredBuses = Object.entries(buses).filter(([id]) =>
         id.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -204,22 +205,21 @@ const TransportTracking = () => {
                 <div className="flex gap-3">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="Find bus..." 
+                        <input
+                            type="text"
+                            placeholder="Find bus..."
                             className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 sm:w-64"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     {currentUser?.role === 'staff' && (
-                        <button 
+                        <button
                             onClick={() => setIsSharingLocation(!isSharingLocation)}
-                            className={`px-4 py-2 rounded-lg font-bold transition-all shadow-md flex items-center gap-2 text-sm ${
-                                isSharingLocation 
-                                ? 'bg-red-500 text-white animate-pulse' 
-                                : 'bg-emerald-600 text-white'
-                            }`}
+                            className={`px-4 py-2 rounded-lg font-bold transition-all shadow-md flex items-center gap-2 text-sm ${isSharingLocation
+                                    ? 'bg-red-500 text-white animate-pulse'
+                                    : 'bg-emerald-600 text-white'
+                                }`}
                         >
                             <Share2 size={16} />
                             {isSharingLocation ? 'Stop Sharing' : 'Share Live GPS'}
@@ -231,7 +231,7 @@ const TransportTracking = () => {
             {/* Map Area */}
             <div className="flex-1 relative">
                 <div ref={mapContainerRef} className="absolute inset-0 z-0 h-full w-full" />
-                
+
                 {/* Overlay Info Card */}
                 {selectedBusId && buses[selectedBusId] && (
                     <div className="absolute bottom-6 left-6 right-6 md:left-auto md:right-8 md:w-80 bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-2xl z-[500] animate-in fade-in slide-in-from-bottom-4">
@@ -246,10 +246,10 @@ const TransportTracking = () => {
                                 </div>
                             </div>
                             <button onClick={() => setSelectedBusId(null)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-full transition-colors">
-                                 <X size={20} />
+                                <X size={20} />
                             </button>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                                 <span className="text-[10px] text-slate-400 font-black uppercase block mb-1">Last Contact</span>
@@ -281,7 +281,7 @@ const TransportTracking = () => {
             {!selectedBusId && (
                 <div className="absolute bottom-6 left-6 right-6 lg:left-8 lg:w-96 flex gap-4 overflow-x-auto pb-4 scrollbar-hide z-10 transition-all animate-in slide-in-from-left-10">
                     {filteredBuses.map(([id, data]) => (
-                        <div 
+                        <div
                             key={id}
                             onClick={() => {
                                 setSelectedBusId(id);

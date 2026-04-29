@@ -24,7 +24,7 @@ const AttendanceView = () => {
         const fetchStudents = async () => {
             try {
                 setLoading(true);
-                const res = await fetch("http://localhost:3000/api/student", {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/student`, {
                     method: "GET",
                     credentials: "include"
                 });

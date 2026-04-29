@@ -13,6 +13,7 @@ const CreateUser = () => {
         password: "",
         role: "staff",
         branch: "",
+        teacherOf: "",
         student: [],
     });
 
@@ -141,7 +142,7 @@ const CreateUser = () => {
             setError("Please fill all student fields.");
             return;
         }
-        
+
         if (!studentForm.descriptor) {
             setError("Please capture the student's face before adding.");
             return;
@@ -173,6 +174,9 @@ const CreateUser = () => {
 
             if (formData.role === "staff") {
                 payload.branch = formData.branch;
+                if (formData.teacherOf) {
+                    payload.teacherOf = formData.teacherOf;
+                }
             }
 
             if (formData.role === "parent") {
@@ -183,7 +187,7 @@ const CreateUser = () => {
                 payload.student = formData.student;
             }
 
-            const res = await fetch("http://localhost:3000/api/auth/register", {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/auth/register`, {
                 method: "POST",
                 credentials: "include",
                 headers: {
@@ -197,7 +201,7 @@ const CreateUser = () => {
             if (!res.ok) throw new Error(data.error || "Failed to create user");
 
             setMessage("✅ User created successfully");
-            setFormData({ fullname: "", email: "", password: "", role: "staff", branch: "", student: [] });
+            setFormData({ fullname: "", email: "", password: "", role: "staff", branch: "", teacherOf: "", student: [] });
             setStudentForm({ name: "", class: "", roll: "", bus: "", descriptor: null, imagePreview: null });
             setCameraOn(false);
 
@@ -224,17 +228,17 @@ const CreateUser = () => {
                         {/* Basic Info Section */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold text-slate-800 border-b pb-2">Basic Information</h3>
-                            
+
                             <div className="relative">
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                    <input 
-                                        name="fullname" 
+                                    <input
+                                        name="fullname"
                                         value={formData.fullname}
-                                        placeholder="John Doe" 
-                                        onChange={handleChange} 
-                                        required 
+                                        placeholder="John Doe"
+                                        onChange={handleChange}
+                                        required
                                         className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
@@ -244,13 +248,13 @@ const CreateUser = () => {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                    <input 
+                                    <input
                                         type="email"
-                                        name="email" 
+                                        name="email"
                                         value={formData.email}
-                                        placeholder="email@example.com" 
-                                        onChange={handleChange} 
-                                        required 
+                                        placeholder="email@example.com"
+                                        onChange={handleChange}
+                                        required
                                         className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
@@ -260,13 +264,13 @@ const CreateUser = () => {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                    <input 
-                                        type="password" 
-                                        name="password" 
+                                    <input
+                                        type="password"
+                                        name="password"
                                         value={formData.password}
-                                        placeholder="••••••••" 
-                                        onChange={handleChange} 
-                                        required 
+                                        placeholder="••••••••"
+                                        onChange={handleChange}
+                                        required
                                         className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
@@ -276,8 +280,8 @@ const CreateUser = () => {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
                                 <div className="relative">
                                     <Shield className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                    <select 
-                                        name="role" 
+                                    <select
+                                        name="role"
                                         value={formData.role}
                                         onChange={handleChange}
                                         className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
@@ -289,20 +293,39 @@ const CreateUser = () => {
                             </div>
 
                             {formData.role === "staff" && (
-                                <div className="relative animate-in fade-in slide-in-from-top-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Branch</label>
-                                    <div className="relative">
-                                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input 
-                                            name="branch" 
-                                            value={formData.branch}
-                                            placeholder="e.g. Main Campus" 
-                                            onChange={handleChange} 
-                                            required
-                                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
+                                <>
+                                    <div className="relative animate-in fade-in slide-in-from-top-2">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Branch</label>
+                                        <div className="relative">
+                                            <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <input
+                                                name="branch"
+                                                value={formData.branch}
+                                                placeholder="e.g. Main Campus"
+                                                onChange={handleChange}
+                                                required
+                                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                    <div className="relative animate-in fade-in slide-in-from-top-2">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Class Teacher Of (Optional)</label>
+                                        <div className="relative">
+                                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <select
+                                                name="teacherOf"
+                                                value={formData.teacherOf}
+                                                onChange={handleChange}
+                                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                                            >
+                                                <option value="" disabled>Select Class</option>
+                                                {[...Array(10)].map((_, i) => (
+                                                    <option key={i + 1} value={(i + 1).toString()}>{i + 1}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </>
                             )}
                         </div>
 
@@ -310,7 +333,7 @@ const CreateUser = () => {
                         {formData.role === "parent" && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 border-l pl-0 md:pl-6 border-slate-100">
                                 <h3 className="text-lg font-semibold text-slate-800 border-b pb-2">Student Information</h3>
-                                
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <input
@@ -330,7 +353,7 @@ const CreateUser = () => {
                                         >
                                             <option value="" disabled>Class</option>
                                             {[...Array(10)].map((_, i) => (
-                                                <option key={i+1} value={i+1}>{i+1}</option>
+                                                <option key={i + 1} value={i + 1}>{i + 1}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -360,13 +383,13 @@ const CreateUser = () => {
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <div className="mt-4 pt-4 border-t border-slate-100">
                                     <h4 className="text-sm font-semibold text-slate-800 mb-2">Facial Recognition Setup</h4>
-                                    
+
                                     {!cameraOn ? (
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             onClick={() => setCameraOn(true)}
                                             className="w-full py-2 border-2 border-dashed border-blue-200 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
                                         >
@@ -384,15 +407,15 @@ const CreateUser = () => {
                                                 />
                                             </div>
                                             <div className="flex gap-2">
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     onClick={captureFace}
                                                     className="flex-1 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-md shadow-blue-200 transition-colors flex items-center justify-center gap-2"
                                                 >
                                                     <ScanFace size={18} /> Capture Face
                                                 </button>
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     onClick={() => setCameraOn(false)}
                                                     className="px-4 py-2 bg-slate-100 text-slate-600 font-medium rounded-lg hover:bg-slate-200 transition-colors"
                                                 >
@@ -416,8 +439,8 @@ const CreateUser = () => {
                                     )}
                                 </div>
 
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={handleAddStudent}
                                     className="w-full py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 mt-4"
                                 >
@@ -460,7 +483,7 @@ const CreateUser = () => {
 
                     {/* Submit Button */}
                     <div className="pt-4 border-t border-slate-100">
-                        <button 
+                        <button
                             type="submit"
                             className="w-full py-3 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900 shadow-lg shadow-slate-200 transition-all flex items-center justify-center gap-2"
                         >

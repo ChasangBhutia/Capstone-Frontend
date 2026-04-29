@@ -27,12 +27,12 @@ const Login = () => {
         setIsLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:3000/api/auth/login', formData, { withCredentials: true });
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}api/auth/login`, formData, { withCredentials: true });
             if (response.data.success) {
                 setMessage("Login successful!");
                 // Redirecting to overview/dashboard
                 setTimeout(() => {
-                    navigate('/');
+                    navigate('/dashboard');
                 }, 1000);
             } else {
                 setError(response.data.error || "Login failed");

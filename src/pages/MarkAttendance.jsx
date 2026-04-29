@@ -96,7 +96,7 @@ const MarkAttendance = () => {
 
             setMessage("Matching & marking attendance...");
 
-            const res = await fetch("http://localhost:3000/api/attendance", {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/attendance`, {
                 method: "POST",
                 credentials: "include",
                 headers: {
@@ -132,7 +132,7 @@ const MarkAttendance = () => {
         try {
             setMessage("Saving attendance...");
             stopCamera();
-            const res = await fetch("http://localhost:3000/api/attendance/save", {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/attendance/save`, {
                 method: "POST",
                 credentials: "include",
                 headers: {

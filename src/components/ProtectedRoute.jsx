@@ -10,7 +10,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/api/auth/user', { withCredentials: true });
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}api/auth/user`, { withCredentials: true });
                 if (response.data.success) {
                     setUser(response.data.user);
                 } else {

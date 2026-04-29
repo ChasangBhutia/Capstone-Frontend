@@ -7,16 +7,17 @@ import toast from "react-hot-toast";
 
 const Layout = () => {
     const [isOpen, setIsOpen] = useState(false);
+    const BACKEND_URI = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
-        const socket = io('http://localhost:3000', { withCredentials: true });
+        const socket = io(BACKEND_URI, { withCredentials: true });
 
         socket.on('new-alert', (data) => {
             // Two-way: confirm receipt back to server
             socket.emit('alert-received', { alertId: data.id, userId: 'current-user-context' });
 
             const isEmergency = data.type === 'emergency';
-            
+
             toast.custom((t) => (
                 <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 border-l-4 ${isEmergency ? 'border-red-600' : 'border-blue-500'}`}>
                     <div className="flex-1 w-0 p-4">
@@ -33,7 +34,7 @@ const Layout = () => {
                                 </p>
                                 {isEmergency && (
                                     <div className="mt-3 flex gap-2">
-                                        <button 
+                                        <button
                                             onClick={() => toast.dismiss(t.id)}
                                             className="px-3 py-1 bg-red-600 text-white text-[10px] font-bold rounded-full uppercase"
                                         >
@@ -63,7 +64,7 @@ const Layout = () => {
                     </button>
                     <span className="ml-2 font-bold text-lg text-slate-800">SafeRoute</span>
                 </div>
-                
+
                 <div className="p-4 md:p-6 lg:p-8 flex-1">
                     <Outlet />
                 </div>

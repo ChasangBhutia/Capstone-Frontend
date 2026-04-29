@@ -10,6 +10,7 @@ import Chatbot from "./pages/Chatbot"
 import DashboardHome from "./pages/DashboardHome"
 import TransportTracking from "./pages/TransportTracking"
 import Notifications from "./pages/Notifications"
+import Landing from "./pages/Landing"
 
 import ProtectedRoute from "./components/ProtectedRoute"
 
@@ -18,10 +19,15 @@ function App() {
     <BrowserRouter>
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
 
         <Route element={<Layout />}>
-          <Route path="/" element={<DashboardHome />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute allowedRoles={['admin', 'staff', 'parent']}>
+              <DashboardHome />
+            </ProtectedRoute>
+          } />
 
           <Route path="/attendance" element={
             <ProtectedRoute allowedRoles={['admin', 'staff']}>
