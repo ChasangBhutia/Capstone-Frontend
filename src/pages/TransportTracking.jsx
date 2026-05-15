@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
-import axios from 'axios';
 import { Bus, Clock, MapPin, Navigation, Signal, AlertCircle, Share2, Search, X, Video, Gauge, Fuel, Users, Phone, MessageSquare, Edit, UserCog, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-// --- Configuration ---
-const BACKEND_URI = import.meta.env.VITE_BACKEND_URL;
-const SOCKET_URL = BACKEND_URI;
-const API_URL = BACKEND_URI + 'api/bus/all';
+import api from '../utils/api';
+import { Geolocation } from '@capacitor/geolocation';
 
 const TransportTracking = () => {
-    // 1. State Management
+    // ... state remains same ...
     const [buses, setBuses] = useState({});
     const [selectedBusId, setSelectedBusId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -29,7 +25,7 @@ const TransportTracking = () => {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const response = await axios.get(`${BACKEND_URI}api/auth/user`, { withCredentials: true });
+                const response = await api.get('api/auth/user');
                 if (response.data.success) {
                     setCurrentUser(response.data.user);
                 }
@@ -66,7 +62,7 @@ const TransportTracking = () => {
     // 4. API Service & Socket logic
     const fetchInitialLocations = useCallback(async () => {
         try {
-            const response = await axios.get(API_URL);
+            const response = await api.get('api/bus/all');
             if (response.data.success) {
                 const map = {};
                 response.data.data.forEach(bus => {
@@ -85,7 +81,7 @@ const TransportTracking = () => {
     useEffect(() => {
         fetchInitialLocations();
 
-        const socket = io(SOCKET_URL, {
+        const socket = io(import.meta.env.VITE_BACKEND_URL, {
             withCredentials: true,
             transports: ['websocket']
         });
@@ -143,47 +139,58 @@ const TransportTracking = () => {
     useEffect(() => {
         let watchId;
 
-        if (isSharingLocation && currentUser?.branch && navigator.geolocation) {
-            toast.success("GPS Broadcast active. Tracking device position.");
-
-            // Use watchPosition for high-accuracy real-time tracking
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-
-                    // Update Local State for immediate feedback
-                    setBuses(prev => ({
-                        ...prev,
-                        [currentUser.branch]: {
-                            ...prev[currentUser.branch],
-                            lat: latitude,
-                            lng: longitude,
-                            updatedAt: new Date()
-                        }
-                    }));
-
-                    // Send Real GPS to backend
-                    axios.post(`${BACKEND_URI}api/bus/update-location`, {
-                        x: latitude, // maps to lat
-                        y: longitude // maps to lng
-                    }, { withCredentials: true })
-                        .catch(err => console.error("Broadcast failed", err));
-                },
-                (error) => {
-                    console.error("GPS Error:", error);
-                    toast.error("GPS Error: " + error.message);
+        const startTracking = async () => {
+            try {
+                // Request permissions explicitly (Crucial for Mobile)
+                const permission = await Geolocation.requestPermissions();
+                if (permission.location !== 'granted') {
+                    toast.error("Location permission denied ❌");
                     setIsSharingLocation(false);
-                },
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 5000
+                    return;
                 }
-            );
+
+                toast.success("GPS Broadcast active. Tracking device position.");
+
+                watchId = await Geolocation.watchPosition(
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000
+                    },
+                    (position) => {
+                        if (!position) return;
+                        const { latitude, longitude } = position.coords;
+
+                        // Update Local State for immediate feedback
+                        setBuses(prev => ({
+                            ...prev,
+                            [currentUser.branch]: {
+                                ...prev[currentUser.branch],
+                                lat: latitude,
+                                lng: longitude,
+                                updatedAt: new Date()
+                            }
+                        }));
+
+                        // Send Real GPS to backend
+                        api.post('api/bus/update-location', {
+                            x: latitude,
+                            y: longitude
+                        }).catch(err => console.error("Broadcast failed", err));
+                    }
+                );
+            } catch (err) {
+                console.error("GPS Error:", err);
+                toast.error("GPS Error: " + err.message);
+                setIsSharingLocation(false);
+            }
+        };
+
+        if (isSharingLocation && currentUser?.branch) {
+            startTracking();
         }
 
         return () => {
-            if (watchId) navigator.geolocation.clearWatch(watchId);
+            if (watchId) Geolocation.clearWatch({ id: watchId });
         };
     }, [isSharingLocation, currentUser]);
 

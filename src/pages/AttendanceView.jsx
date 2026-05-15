@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, QrCode, CheckCircle2, Bus, User, Trash2, Image as ImageIcon, AlertTriangle, Check, ShieldCheck, CameraOff, Download, Upload, Sparkles } from 'lucide-react';
 import QRCode from "react-qr-code";
 import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 
 const AttendanceView = () => {
 
@@ -24,19 +25,15 @@ const AttendanceView = () => {
         const fetchStudents = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/student`, {
-                    method: "GET",
-                    credentials: "include"
-                });
-                const data = await res.json();
-                if (data.success) {
-                    const mappedStudents = data.students.map(s => ({
-                        id: s.roll || s._id,
-                        name: s.studentName,
-                        grade: s.class,
-                        status: s.attendanceStatus || 'Absent', // Use real status if provided
-                        busRouteId: s.bus || 'Not Assigned',
-                        photoUrl: s.photo || null
+                const response = await api.get('api/attendance');
+                if (response.data.success) {
+                    const mappedStudents = response.data.attendance.map(a => ({
+                        id: a.student.roll || a.student._id,
+                        name: a.student.studentName,
+                        grade: a.student.class,
+                        status: a.status,
+                        busRouteId: a.student.bus || 'Not Assigned',
+                        photoUrl: a.student.photo || null
                     }));
                     setStudents(mappedStudents);
                 }
@@ -69,8 +66,8 @@ const AttendanceView = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'Present': return 'bg-emerald-100 text-emerald-700';
-            case 'Absent': return 'bg-red-100 text-red-700';
+            case 'present': return 'bg-emerald-100 text-emerald-700';
+            case 'absent': return 'bg-red-100 text-red-700';
             default: return 'bg-slate-100 text-slate-700';
         }
     };
@@ -129,7 +126,7 @@ const AttendanceView = () => {
                     </div>
                     <div>
                         <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">Present</p>
-                        <h3 className="text-2xl font-black text-slate-800">{students.filter(s => s.status === 'Present').length}</h3>
+                        <h3 className="text-2xl font-black text-slate-800">{students.filter(s => s.status === 'present').length}</h3>
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
@@ -138,7 +135,7 @@ const AttendanceView = () => {
                     </div>
                     <div>
                         <p className="text-xs font-bold text-red-500 uppercase tracking-widest">Absent</p>
-                        <h3 className="text-2xl font-black text-slate-800">{students.filter(s => s.status === 'Absent').length}</h3>
+                        <h3 className="text-2xl font-black text-slate-800">{students.filter(s => s.status === 'absent').length}</h3>
                     </div>
                 </div>
             </div>
@@ -185,7 +182,7 @@ const AttendanceView = () => {
                     />
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
-                    {['All', 'Present', 'Absent'].map((f) => (
+                    {['All', 'present', 'absent'].map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
@@ -194,7 +191,7 @@ const AttendanceView = () => {
                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
-                            {f}
+                            {f.charAt(0).toUpperCase() + f.slice(1)}
                         </button>
                     ))}
                 </div>

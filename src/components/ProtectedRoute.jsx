@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const [user, setUser] = useState(null);
@@ -10,7 +10,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}api/auth/user`, { withCredentials: true });
+                const response = await api.get('api/auth/user');
                 if (response.data.success) {
                     setUser(response.data.user);
                 } else {

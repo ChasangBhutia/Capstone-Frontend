@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Send, MessageSquare, Sparkles, AlertTriangle, Check, Clock, History, Smartphone, Mail, Bell, Calendar, X, ShieldCheck, Siren, Phone, HeartPulse, MapPin, FileText } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { io } from 'socket.io-client';
 
@@ -48,7 +48,7 @@ const Notifications = () => {
 
         const fetchBuses = async () => {
             try {
-                const response = await axios.get(`${BACKEND_URL}api/bus/all`);
+                const response = await api.get('api/bus/all');
                 if (response.data.success) {
                     setBuses(response.data.data);
                     if (response.data.data.length > 0) setSelectedBusId(response.data.data[0].busId);
@@ -59,7 +59,7 @@ const Notifications = () => {
         };
         const fetchHistory = async () => {
             try {
-                const response = await axios.get(`${BACKEND_URL}api/alerts/history`, { withCredentials: true });
+                const response = await api.get('api/alerts/history');
                 if (response.data.success) {
                     setHistory(response.data.alerts.map(a => ({
                         ...a,
@@ -102,12 +102,12 @@ const Notifications = () => {
         }
 
         try {
-            const response = await axios.post(`${BACKEND_URL}api/alerts/broadcast`, {
+            const response = await api.post('api/alerts/broadcast', {
                 type,
                 message: generatedMessage,
                 target: route,
                 channels: activeChannels
-            }, { withCredentials: true });
+            });
 
             if (response.data.success) {
                 toast.success("Alert broadcasted successfully!");
@@ -125,12 +125,12 @@ const Notifications = () => {
         const emergencyMsg = `CRITICAL: ${service} has been dispatched to Bus ${selectedBusData.busId}. Coordinates: ${selectedBusData.lat}, ${selectedBusData.lng}`;
 
         try {
-            await axios.post(`${BACKEND_URL}api/alerts/broadcast`, {
+            await api.post('api/alerts/broadcast', {
                 type: 'emergency',
                 message: emergencyMsg,
                 target: 'Emergency Services',
                 channels: ['GPS', 'VOIP']
-            }, { withCredentials: true });
+            });
 
             setEmergencyStatus(`${service} DISPATCHED. ETA: 6 mins.`);
             setIsSOSMode(false);

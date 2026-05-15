@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bus, AlertTriangle, CheckCircle, MapPin, Navigation, X, ArrowUp, ArrowDown, Clock, Activity, Bell } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { MOCK_BUSES, MOCK_STUDENTS, StudentStatus, BusStatus } from '../data/mockData';
+import { Users, Bus, AlertTriangle, CheckCircle, MapPin, Navigation, X, Clock, ArrowDown } from 'lucide-react';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { StudentStatus } from '../data/mockData';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
+import { io } from 'socket.io-client';
 
-const StatCard = ({ title, value, subtitle, icon, color, trend, trendUp }) => (
+const StatCard = ({ title, value, subtitle, icon, color }) => (
   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
     <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500 text-${color}-600`}>
       {React.cloneElement(icon, { size: 64 })}
@@ -15,12 +17,6 @@ const StatCard = ({ title, value, subtitle, icon, color, trend, trendUp }) => (
         <div className={`p-3 rounded-xl bg-${color}-50 text-${color}-600`}>
           {icon}
         </div>
-        {trend && (
-          <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-            {trendUp ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-            {trend}
-          </div>
-        )}
       </div>
       <h3 className="text-3xl font-bold text-slate-800 mb-1 tracking-tight">{value}</h3>
       <p className="text-sm font-medium text-slate-500">{title}</p>
@@ -28,33 +24,6 @@ const StatCard = ({ title, value, subtitle, icon, color, trend, trendUp }) => (
     </div>
   </div>
 );
-
-const ActivityItem = ({ type, title, time, desc }) => {
-  let icon = <Activity size={16} />;
-  let color = 'bg-slate-100 text-slate-600';
-
-  if (type === 'checkin') { icon = <CheckCircle size={16} />; color = 'bg-emerald-100 text-emerald-600'; }
-  if (type === 'alert') { icon = <AlertTriangle size={16} />; color = 'bg-amber-100 text-amber-600'; }
-  if (type === 'transport') { icon = <Bus size={16} />; color = 'bg-blue-100 text-blue-600'; }
-
-  return (
-    <div className="flex gap-4 p-4 hover:bg-slate-50 rounded-xl transition-colors border-b border-slate-50 last:border-0">
-      <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${color}`}>
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-start mb-0.5">
-          <h4 className="font-semibold text-slate-800 text-sm truncate">{title}</h4>
-          <span className="text-[10px] font-medium text-slate-400 whitespace-nowrap">{time}</span>
-        </div>
-        <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{desc}</p>
-      </div>
-    </div>
-  );
-};
-
-import axios from 'axios';
-import { io } from 'socket.io-client';
 
 const DashboardHome = () => {
   const navigate = useNavigate();
@@ -69,7 +38,7 @@ const DashboardHome = () => {
     const fetchUser = async () => {
       try {
         setUserLoading(true);
-        const response = await axios.get(`${BACKEND_URL}api/auth/user`, { withCredentials: true });
+        const response = await api.get('api/auth/user');
         if (response.data.success) {
           setCurrentUser(response.data.user);
         }
@@ -102,7 +71,7 @@ const DashboardHome = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}api/stats/overview`, { withCredentials: true });
+        const response = await api.get('api/stats/overview');
         if (response.data.success) {
           setStats(response.data.stats);
         }
@@ -119,7 +88,7 @@ const DashboardHome = () => {
   useEffect(() => {
     const fetchBuses = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}api/bus/all`);
+        const response = await api.get('api/bus/all');
         if (response.data.success) {
           const busMap = {};
           response.data.data.forEach(b => busMap[b.busId] = b);
@@ -148,24 +117,41 @@ const DashboardHome = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Use real data or fallback to mock for visuals
-  const students = MOCK_STUDENTS;
-  const presentCount = students.filter(s => s.status === StudentStatus.PRESENT).length;
+  const [students, setStudents] = useState([]);
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const res = await api.get('api/attendance');
+        if (res.data.success) {
+          const mappedStudents = res.data.attendance.map(a => ({
+            id: a.student.roll || a.student._id,
+            name: a.student.studentName,
+            grade: a.student.class,
+            status: a.status,
+            busRouteId: a.student.bus || 'Not Assigned',
+            photoUrl: a.student.photo || null
+          }));
+          setStudents(mappedStudents);
+        }
+      } catch (err) {
+        console.error("Failed to fetch attendance data", err);
+      }
+    };
+    if (currentUser?.role === 'admin' || currentUser?.role === 'staff') {
+      fetchAttendance();
+    }
+  }, [currentUser]);
+
+  const presentCount = stats.presentCount !== undefined ? stats.presentCount : students.filter(s => s.status === 'present').length;
+  const absentCount = stats.absentCount !== undefined ? stats.absentCount : students.filter(s => s.status === 'absent').length;
   const totalStudents = stats.totalStudents || students.length;
   const attendanceRate = stats.attendanceRate || (totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0);
 
   const attendanceData = [
     { name: 'Present', value: presentCount },
-    { name: 'Absent', value: students.filter(s => s.status === StudentStatus.ABSENT).length },
-    { name: 'Late', value: students.filter(s => s.status === StudentStatus.LATE).length },
-  ];
-
-  const weeklyData = [
-    { day: 'Mon', rate: 92, absents: 8 },
-    { day: 'Tue', rate: 95, absents: 5 },
-    { day: 'Wed', rate: 88, absents: 12 },
-    { day: 'Thu', rate: 94, absents: 6 },
-    { day: 'Fri', rate: attendanceRate, absents: totalStudents - presentCount },
+    { name: 'Absent', value: absentCount },
+    { name: 'Late', value: students.filter(s => s.status === 'late').length },
   ];
 
   const COLORS = ['#10b981', '#ef4444', '#f59e0b'];
@@ -197,11 +183,6 @@ const DashboardHome = () => {
   useEffect(() => {
     const L = window.L;
     if (!L || !mapInstanceRef.current) return;
-
-    const BASE_LAT = 51.53;
-    const BASE_LNG = -0.18;
-    const LAT_SPAN = -0.06;
-    const LNG_SPAN = 0.16;
 
     Object.values(buses).forEach(bus => {
       const lat = bus.lat;
@@ -251,15 +232,14 @@ const DashboardHome = () => {
       return;
     }
 
-    const headers = ["ID", "Name", "Grade", "Status", "Check-in Time", "Route", "Parent Phone"];
+    const headers = ["ID", "Name", "Grade", "Status", "Check-in Time", "Route"];
     const rows = students.map(s => [
       s.id,
       s.name,
       s.grade,
       s.status,
       s.checkInTime || '-',
-      s.busRouteId,
-      s.parentPhone
+      s.busRouteId
     ]);
 
     const csvContent = [
@@ -330,32 +310,10 @@ const DashboardHome = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {isAdmin && (
-          <>
-            <StatCard title="Total Enrollment" value={totalStudents} subtitle="Active student records" icon={<Users size={24} />} color="blue" trend="12% vs last month" trendUp={true} />
-            <StatCard title="Attendance Rate" value={`${attendanceRate}%`} subtitle="Daily average" icon={<CheckCircle size={24} />} color="emerald" trend="2.1% vs yesterday" trendUp={true} />
-            <StatCard title="Active Fleet" value={`${stats.activeBuses}/3`} subtitle="Buses currently on route" icon={<Bus size={24} />} color="indigo" trend="On Schedule" trendUp={true} />
-            <StatCard title="Security Alerts" value={stats.activeAlerts} subtitle="Requires attention" icon={<AlertTriangle size={24} />} color="amber" trend="Low Severity" trendUp={false} />
-          </>
-        )}
-
-        {isStaff && (
-          <>
-            <StatCard title="Assigned Unit" value={currentUser?.fullname?.split('Bus ')[1] || 'N/A'} subtitle="Vehicle ID" icon={<Bus size={24} />} color="blue" />
-            <StatCard title="Route Status" value="On Time" subtitle="Traffic: Moderate" icon={<Navigation size={24} />} color="emerald" />
-            <StatCard title="Passenger Load" value="28/40" subtitle="70% capacity" icon={<Users size={24} />} color="indigo" />
-            <StatCard title="Engine Health" value="Optimal" subtitle="Next service: 12 days" icon={<Activity size={24} />} color="amber" />
-          </>
-        )}
-
-        {isParent && (
-          <>
-            <StatCard title="Child Status" value="At School" subtitle="Checked in: 08:15 AM" icon={<CheckCircle size={24} />} color="emerald" />
-            <StatCard title="Assigned Bus" value="R-101" subtitle="ETA to stop: 03:45 PM" icon={<Bus size={24} />} color="blue" />
-            <StatCard title="Attendance" value="98%" subtitle="Academic year total" icon={<Activity size={24} />} color="indigo" />
-            <StatCard title="Alerts" value="0" subtitle="No notifications today" icon={<Bell size={24} />} color="slate" />
-          </>
-        )}
+        <StatCard title="Total Enrollment" value={totalStudents} subtitle="Active student records" icon={<Users size={24} />} color="blue" />
+        <StatCard title="Attendance Rate" value={`${attendanceRate}%`} subtitle="Daily average" icon={<CheckCircle size={24} />} color="emerald" />
+        <StatCard title="Active Fleet" value={`${stats.activeBuses}`} subtitle="Buses currently on route" icon={<Bus size={24} />} color="indigo" />
+        <StatCard title="Security Alerts" value={stats.activeAlerts} subtitle="Requires attention" icon={<AlertTriangle size={24} />} color="amber" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -436,82 +394,7 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[500px]">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-              <Activity size={20} className="text-indigo-500" /> Recent Activity
-            </h3>
-            <button className="text-xs font-medium text-slate-500 hover:text-blue-600">View All</button>
-          </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <ActivityItem
-              type="checkin"
-              title="Alice Johnson Checked In"
-              time="2 mins ago"
-              desc="Verified via Face ID at Main Entrance Gate A."
-            />
-            <ActivityItem
-              type="transport"
-              title="Bus R-103 Arrived"
-              time="5 mins ago"
-              desc="Arrived at School Zone. Offloading 15 students."
-            />
-            <ActivityItem
-              type="alert"
-              title="Unrecognized Person"
-              time="12 mins ago"
-              desc="Security camera detected unregistered individual near Gate B."
-            />
-            <ActivityItem
-              type="checkin"
-              title="Bob Smith Checked In"
-              time="15 mins ago"
-              desc="Verified via QR Code scan."
-            />
-            <ActivityItem
-              type="transport"
-              title="Bus R-101 Delayed"
-              time="25 mins ago"
-              desc="Traffic congestion reported on North Avenue. ETA +10m."
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-800">Attendance Trends</h3>
-              <p className="text-sm text-slate-500">Weekly student presence analytics</p>
-            </div>
-            <select className="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg px-3 py-1 outline-none">
-              <option>This Week</option>
-              <option>Last Week</option>
-            </select>
-          </div>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyData}>
-                <defs>
-                  <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1e293b', color: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                  itemStyle={{ color: '#fff' }}
-                />
-                <Area type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRate)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[500px]">
           <h3 className="text-lg font-bold text-slate-800 mb-2">Today's Distribution</h3>
           <p className="text-sm text-slate-500 mb-6">Real-time student status breakdown</p>
 

@@ -1,0 +1,11 @@
+{
+  "appId": "com.saferoute.app",
+  "appName": "SafeRoute",
+  "webDir": "dist",
+  "server": {
+    "cleartext": true
+  },
+  "ios": {
+    "allowsInlineMediaPlayback": true
+  }
+}

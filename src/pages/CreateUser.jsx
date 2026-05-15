@@ -3,6 +3,7 @@ import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-backend-webgl";
 import * as faceapi from "face-api.js";
 import { UserPlus, Mail, Lock, Shield, Building, User, Hash, Bus, Camera, ScanFace } from 'lucide-react';
+import api from '../utils/api';
 
 const CreateUser = () => {
     const videoRef = useRef(null);
@@ -187,18 +188,10 @@ const CreateUser = () => {
                 payload.student = formData.student;
             }
 
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/auth/register`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
+            const response = await api.post('api/auth/register', payload);
+            const data = response.data;
 
-            const data = await res.json();
-
-            if (!res.ok) throw new Error(data.error || "Failed to create user");
+            if (data.success === false) throw new Error(data.error || "Failed to create user");
 
             setMessage("✅ User created successfully");
             setFormData({ fullname: "", email: "", password: "", role: "staff", branch: "", teacherOf: "", student: [] });

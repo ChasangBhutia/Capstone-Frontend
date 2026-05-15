@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, MessageSquare, Sparkles, Bot, User, History, Plus } from 'lucide-react';
+import api from '../utils/api';
 
 const Chatbot = () => {
     const [messages, setMessages] = useState([]);
@@ -9,8 +10,6 @@ const Chatbot = () => {
     const [creatingSession, setCreatingSession] = useState(false);
     const bottomRef = useRef(null);
 
-    const BACKEND_URI = import.meta.env.VITE_BACKEND_URL;
-
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -19,12 +18,8 @@ const Chatbot = () => {
     const createSession = async () => {
         try {
             setCreatingSession(true);
-            const res = await fetch(`${BACKEND_URI}api/ai/session`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-
-            const data = await res.json();
+            const response = await api.post('api/ai/session', {});
+            const data = response.data;
             if (data.success) {
                 setSessionId(data.session._id);
             }
@@ -45,14 +40,8 @@ const Chatbot = () => {
         setLoading(true);
 
         try {
-            const res = await fetch(`${BACKEND_URI}api/ai/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ sessionId, prompt: input })
-            });
-
-            const data = await res.json();
+            const response = await api.post('api/ai/chat', { sessionId, prompt: input });
+            const data = response.data;
 
             const botMsg = {
                 role: 'bot',

@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Bus, Users, Bot, Bell, ArrowRight, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
 
 const Landing = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const response = await axios.get(`${BACKEND_URL}api/auth/user`, { withCredentials: true });
+                const response = await api.get('api/auth/user');
                 if (response.data.success) {
                     setIsAuthenticated(true);
                 }

@@ -1,19 +1,18 @@
 import { LayoutDashboard, Bus, Users, Bell, ShieldCheck, Menu, X, Brain, User, LogOut, AlertTriangle } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import toast from 'react-hot-toast';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
 
-    const BACKEND_URI = import.meta.env.VITE_BACKEND_URL;
     const [user, setUser] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const response = await axios.get(`${BACKEND_URI}api/auth/user`, { withCredentials: true });
+                const response = await api.get('api/auth/user');
                 if (response.data.success) {
                     setUser(response.data.user);
                 }
@@ -26,7 +25,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     const handleLogout = async () => {
         try {
-            await axios.post(`${BACKEND_URI}api/auth/logout`, {}, { withCredentials: true });
+            await api.post('api/auth/logout', {});
+            localStorage.removeItem('token');
             navigate('/login');
         } catch (error) {
             console.error("Logout failed", error);
@@ -92,12 +92,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                         // Fetch current position (or use last known if it was a real app)
                                         const pos = await new Promise((res) => navigator.geolocation.getCurrentPosition(res, () => res({ coords: { latitude: 0, longitude: 0 } })));
 
-                                        await axios.post(`${BACKEND_URI}api/alerts/broadcast`, {
+                                        await api.post('api/alerts/broadcast', {
                                             type: 'emergency',
                                             message: `CRITICAL: SOS signal received from ${user.fullname} (Bus ${user.branch}). Immediate assistance required! GPS: ${pos.coords.latitude}, ${pos.coords.longitude}`,
                                             target: 'Emergency Services',
                                             channels: ['GPS', 'SMS', 'PUSH']
-                                        }, { withCredentials: true });
+                                        });
 
                                         toast.success("SOS Broadcasted!", { id: 'sos' });
                                     } catch (err) {

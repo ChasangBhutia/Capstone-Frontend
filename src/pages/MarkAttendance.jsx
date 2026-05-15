@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js";
 import { Camera, ScanLine, Check, AlertTriangle, Loader2, Save, Info } from 'lucide-react';
+import api from '../utils/api';
 
 const MarkAttendance = () => {
     const videoRef = useRef(null);
@@ -96,20 +97,21 @@ const MarkAttendance = () => {
 
             setMessage("Matching & marking attendance...");
 
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/attendance`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
+            let data;
+            try {
+                const response = await api.post('api/attendance', {
                     descriptor,
                     subject: "Math",
                     studentClass: "ten",
-                }),
-            });
-
-            const data = await res.json();
+                });
+                data = response.data;
+            } catch (err) {
+                if (err.response && err.response.data) {
+                    data = err.response.data;
+                } else {
+                    throw err;
+                }
+            }
 
             if (!data.success) {
                 if (data.message === "Already marked today" && data.student) {
@@ -132,17 +134,10 @@ const MarkAttendance = () => {
         try {
             setMessage("Saving attendance...");
             stopCamera();
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/attendance/save`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    sClass: "10",
-                }),
+            const response = await api.post('api/attendance/save', {
+                sClass: "10",
             });
-            const data = await res.json();
+            const data = response.data;
             if (!data.success) {
                 setMessage(`❌ ${data.message || "Failed to save attendance"}`);
             } else {
@@ -258,7 +253,7 @@ const MarkAttendance = () => {
 
                         <div className="flex items-center gap-2 text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg w-full sm:w-auto overflow-hidden">
                             <Info size={18} className="text-blue-500 shrink-0" />
-                            <span className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">Subj: <strong className="text-slate-800">Math</strong> | Class: <strong className="text-slate-800">10</strong></span>
+                            <span>Class: <strong className="text-slate-800">10</strong></span>
                         </div>
 
                         <button
@@ -286,7 +281,7 @@ const MarkAttendance = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

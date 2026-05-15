@@ -11,10 +11,16 @@ import DashboardHome from "./pages/DashboardHome"
 import TransportTracking from "./pages/TransportTracking"
 import Notifications from "./pages/Notifications"
 import Landing from "./pages/Landing"
+import { useEffect } from "react"
 
 import ProtectedRoute from "./components/ProtectedRoute"
 
 function App() {
+
+  useEffect(() => {
+    console.log("Origin:", window.location.origin);
+    console.log("Href:", window.location.href);
+  }, []);
   return (
     <BrowserRouter>
       <Toaster position="top-right" reverseOrder={false} />
@@ -34,7 +40,7 @@ function App() {
               <AttendanceView />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/attendance/scan" element={
             <ProtectedRoute allowedRoles={['admin', 'staff']}>
               <MarkAttendance />
@@ -49,7 +55,7 @@ function App() {
 
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/ai/chat" element={<Chatbot />} />
-          
+
           <Route path="/create-profile" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <CreateUser />

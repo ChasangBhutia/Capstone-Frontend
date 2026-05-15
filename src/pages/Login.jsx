@@ -29,6 +29,11 @@ const Login = () => {
         try {
             const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}api/auth/login`, formData, { withCredentials: true });
             if (response.data.success) {
+                // Store token for mobile/app compatibility
+                if (response.data.token) {
+                    localStorage.setItem('token', response.data.token);
+                }
+                
                 setMessage("Login successful!");
                 // Redirecting to overview/dashboard
                 setTimeout(() => {
