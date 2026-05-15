@@ -15,6 +15,7 @@ const AttendanceView = () => {
     const [search, setSearch] = useState('');
     const [insight, setInsight] = useState('');
     const [loadingInsight, setLoadingInsight] = useState(false);
+    console.log(students + " kshjdfk")
 
     // Modal States
     const [deleteConfirmation, setDeleteConfirmation] = useState(null);
@@ -27,14 +28,16 @@ const AttendanceView = () => {
                 setLoading(true);
                 const response = await api.get('api/attendance');
                 if (response.data.success) {
-                    const mappedStudents = response.data.attendance.map(a => ({
-                        id: a.student.roll || a.student._id,
-                        name: a.student.studentName,
-                        grade: a.student.class,
-                        status: a.status,
-                        busRouteId: a.student.bus || 'Not Assigned',
-                        photoUrl: a.student.photo || null
-                    }));
+                    const mappedStudents = response.data.attendance
+                        .filter(a => a.student) // Filter out records where student is null
+                        .map(a => ({
+                            id: a.student.roll || a.student._id,
+                            name: a.student.studentName,
+                            grade: a.student.class,
+                            status: a.status,
+                            busRouteId: a.student.bus || 'Not Assigned',
+                            photoUrl: a.student.photo || null
+                        }));
                     setStudents(mappedStudents);
                 }
             } catch (err) {

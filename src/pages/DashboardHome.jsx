@@ -124,14 +124,16 @@ const DashboardHome = () => {
       try {
         const res = await api.get('api/attendance');
         if (res.data.success) {
-          const mappedStudents = res.data.attendance.map(a => ({
-            id: a.student.roll || a.student._id,
-            name: a.student.studentName,
-            grade: a.student.class,
-            status: a.status,
-            busRouteId: a.student.bus || 'Not Assigned',
-            photoUrl: a.student.photo || null
-          }));
+          const mappedStudents = res.data.attendance
+            .filter(a => a.student) // Filter out records where student is null
+            .map(a => ({
+              id: a.student.roll || a.student._id,
+              name: a.student.studentName,
+              grade: a.student.class,
+              status: a.status,
+              busRouteId: a.student.bus || 'Not Assigned',
+              photoUrl: a.student.photo || null
+            }));
           setStudents(mappedStudents);
         }
       } catch (err) {
